@@ -24,7 +24,7 @@ Ensure you have the following installed:
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/Naresh-19/image-caption-generator.git
+    git clone https://github.com/Naresh-19/Image_Caption
     cd image_caption
     ```
 
