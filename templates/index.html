@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Caption Generator</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="light-mode">
+    <div class="container">
+        <div class="left-panel">
+            <h2>Image Caption Generator</h2>
+            <p>Turning Moments into narratives with our image caption generator</p>
+            <div class="upload-box" onclick="document.getElementById('file-input').click();" 
+                 ondragover="handleDragOver(event)" 
+                 ondragenter="handleDragEnter(event)" 
+                 ondragleave="handleDragLeave(event)"
+                 ondrop="handleDrop(event)">
+                <input type="file" id="file-input" accept="image/*" onchange="previewImage()" style="display: none;">
+                <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                <p>Click or drag and drop to upload</p>
+                <p>SVG, PNG, JPG or GIF (max. 5mb)</p>
+            </div>
+            <img id="image-preview" class="preview-image" style="display: none;">
+            <button class="generate-button" onclick="generateCaption()" style="display: none;" id="generate-button">Generate Image Caption</button>
+        </div>
+        <div class="right-panel">
+            <div class="tabs">
+                <button class="active" onclick="showOutput()">Output</button>
+                <button onclick="showSamples()">Sample Images</button>
+            </div>
+            <div class="output-box" id="output-box">
+                <p>Your generated content will appear here.</p>
+            </div>
+            <div class="sample-images" style="display: none;" id="sample-images">
+                <h3>Sample Images</h3>
+                <img src="static/Playing.jpg" onclick="useSample('sample1.jpg')" alt="Sample 1">
+                <img src="static/phone.jpg" onclick="useSample('sample2.jpg')" alt="Sample 2">
+                <img src="static/image.png" onclick="useSample('sample3.jpg')" alt="Sample 3">
+                <img src="static/shoe.jpg" onclick="useSample('sample4.jpg')" alt="Sample 4">
+            </div>
+        </div>
+    </div>
+    <button id="mode-toggle" onclick="toggleMode()">
+        <i class="fas fa-sun"></i>
+        <i class="fas fa-moon" style="display: none;"></i>
+    </button>
+    <script>
+        function toggleMode() {
+            const body = document.body;
+            const sunIcon = document.querySelector('#mode-toggle .fa-sun');
+            const moonIcon = document.querySelector('#mode-toggle .fa-moon');
+            if (body.classList.contains('light-mode')) {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'inline';
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                sunIcon.style.display = 'inline';
+                moonIcon.style.display = 'none';
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.querySelector('.upload-box').classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.querySelector('.upload-box').classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.querySelector('.upload-box').classList.remove('dragover');
+
+            const droppedFiles = e.dataTransfer.files;
+            if (droppedFiles.length > 0) {
+                const file = droppedFiles[0];
+                const reader = new FileReader();
+
+                reader.onload = function(evt) {
+                    const imagePreview = document.getElementById('image-preview');
+                    imagePreview.src = evt.target.result;
+                    imagePreview.style.display = 'block';
+                    document.getElementById('generate-button').style.display = 'block';
+                };
+
+                const fileInput = document.getElementById('file-input');
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function previewImage() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const imagePreview = document.getElementById('image-preview');
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                document.getElementById('generate-button').style.display = 'block';
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function generateCaption() {
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const outputBox = document.getElementById('output-box');
+                outputBox.innerHTML = `<p>${data.captions[0]}</p>`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function showOutput() {
+            document.querySelector('.tabs button.active').classList.remove('active');
+            document.querySelectorAll('.tabs button')[0].classList.add('active');
+            document.getElementById('output-box').style.display = 'block';
+            document.getElementById('sample-images').style.display = 'none';
+        }
+
+        function showSamples() {
+            document.querySelector('.tabs button.active').classList.remove('active');
+            document.querySelectorAll('.tabs button')[1].classList.add('active');
+            document.getElementById('output-box').style.display = 'none';
+            document.getElementById('sample-images').style.display = 'block';
+        }
+
+        function useSample(imagePath) {
+            const imagePreview = document.getElementById('image-preview');
+            imagePreview.src = imagePath;
+            imagePreview.style.display = 'block';
+            document.getElementById('generate-button').style.display = 'block';
+
+            fetch(imagePath)
+                .then(response => response.blob())
+                .then(blob => {
+                    const fileInput = document.getElementById('file-input');
+                    const dataTransfer = new DataTransfer();
+                    const file = new File([blob], imagePath.split('/').pop(), { type: blob.type });
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+                });
+        }
+    </script>
+</body>
+</html>
